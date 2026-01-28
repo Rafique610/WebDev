@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Artistry Gallery</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Fonts & Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<header class="header">
+  <nav class="nav">
+    <div class="logo">
+      <i class="material-icons">palette</i>
+      <h1>Artistry</h1>
+    </div>
+
+    <div class="nav-links">
+      <a href="#gallery">Gallery</a>
+      <a href="#aboutus">About US</a>
+      <a href="#feedback">Feedback</a>
+    </div>
+
+    <button class="menu-btn" onclick="toggleMenu()">
+      <i class="material-icons">menu</i>
+    </button>
+  </nav>
+
+  <div id="mobileMenu" class="mobile-menu">
+    <a href="#gallery">Gallery</a>
+    <a href="#aboutus">About US</a>
+    <a href="#feedback">Feedback</a>
+
+  </div>
+</header>
+
+
+
+<section id="gallery" class="gallery">
+  <h2>Featured Artworks</h2>
+
+  <div class="gallery-grid">
+
+    <!-- Card 1 -->
+    <article class="artwork-card">
+      <img src="pic1.jpg">
+      <div class="card-body">
+        <h3>Stary Night</h3>
+      </div>
+    </article>
+
+    <!-- Card 2 -->
+    <article class="artwork-card">
+      <img src="pic2.jpg">
+      <div class="card-body">
+        <h3>City Lights</h3>
+      </div>
+    </article>
+
+    <!-- Card 3 -->
+    <article class="artwork-card">
+      <img src="pic3.jpg">
+      <div class="card-body">
+        <h3>Farm Fields</h3>
+      </div>
+    </article>
+
+    <!-- Card 4 -->
+    <article class="artwork-card">
+      <img src="pic4.jpg">
+      <div class="card-body">
+        <h3>Building </h3>
+      </div>
+    </article>
+
+    <!-- Card 5 -->
+    <article class="artwork-card">
+      <img src="pic5.jpg">
+      <div class="card-body">
+        <h3>Building</h3>
+      </div>
+    </article>
+
+  </div>
+</section>
+
+<section id="aboutus" class="section">
+  <h2>About Us</h2>
+  <p class="section-text">
+    Artistry is a digital gallery showcasing creative works from emerging
+    and passionate artists. Our goal is to make art accessible, inspiring,
+    and meaningful for everyone.
+  </p>
+</section>
+
+<section id="feedback" class="section">
+  <h2>Feedback</h2>
+
+  <form class="feedback-form">
+    <input type="text" placeholder="Your Name" required>
+    <input type="email" placeholder="Your Email" required>
+    <textarea placeholder="Your Feedback" rows="4" required></textarea>
+    <button type="submit">Send Feedback</button>
+  </form>
+</section>
+
+
+<footer class="footer">
+  <p>   </p>
+</footer>
+
+<script>
+function toggleMenu() {
+  document.getElementById("mobileMenu").classList.toggle("show");
+}
+</script>
+
+</body>
+</html>
