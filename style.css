@@ -184,3 +184,41 @@ h1, h2, h3 {
 html {
   scroll-behavior: smooth;
 }
+/* Add to your CSS */
+.nav-links a:active {
+  color: #4338ca;
+  transform: scale(0.95);
+}
+
+.feedback-form input:focus,
+.feedback-form textarea:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.artwork-card:nth-child(odd) {
+  background: linear-gradient(to bottom, #ffffff, #f9fafb);
+}
+
+.feedback-form button:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* Add more breakpoints */
+@media (max-width: 480px) {
+  .gallery-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .section h2 {
+    font-size: 1.8rem;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .gallery-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
