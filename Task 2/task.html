@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div id="gameArea" style="display: block;">
+        <!--write a script to move this div by 2 on click in a random direction-->
+        <script>
+            let x = 100;
+            let y = 100;
+            const step = 10;
+            let gameInterval = null;
+
+            // movement direction
+            let dx = step;
+            let dy = step;
+            moving = false;
+
+
+            function startGame() {
+                if(moving) moving = false;
+                else moving = true;
+                if (moving){
+                if (gameInterval !== null) return;
+
+                const gameArea = document.getElementById("gameArea");
+                gameArea.style.position = "absolute";
+
+                gameInterval = setInterval(moveDiv, 30);
+            }
+            }
+
+            function moveDiv() {
+                const gameArea = document.getElementById("gameArea");
+
+                const divWidth = gameArea.offsetWidth;
+                const divHeight = gameArea.offsetHeight;
+
+                const maxX = window.innerWidth - divWidth;
+                const maxY = window.innerHeight - divHeight;
+
+                x += dx;
+                y += dy;
+
+                // Hit left or right wall → reverse X
+                if (x <= 0 || x >= maxX) {
+                    dx = -dx;
+                }
+
+                // Hit top or bottom wall → reverse Y
+                if (y <= 0 || y >= maxY) {
+                    dy = -dy;
+                }
+
+                gameArea.style.left = x + "px";
+                gameArea.style.top = y + "px";
+            }
+        </script>
+
+        <h2> Welcome to Catch Game </h2>
+        <p> Game Content Here </p>
+    </div>
+    <br>
+    <button id="startButton" onclick="startGame()"> Start Game </button>
+
+</body>
+
+</html>
