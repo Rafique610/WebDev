@@ -1,24 +1,336 @@
-#startButton {
-    background-color: #4CAF50;
-    color: white;
-    padding: 15px 32px;
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    font-size: 16px;
-    margin: 4px 2px;
-    cursor: pointer;
-    
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
 body {
+    margin: 0;
+    height: 100vh;
+    background-image: url("forest.jpeg");
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
     display: flex;
-    flex-direction: column;
-    background-color: #f0f0f0;
-    text-align: center;
-    font-family: Arial, sans-serif;
     align-items: center;
     justify-content: center;
-    height: 100vh;
+    padding: 20px;
 }
 
+#gameArea,
+#gameImage {
+    cursor: url("bow.png") 100 100, crosshair;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+    max-width: 900px;
+}
+
+/* Top Controls - Minimal & Blended */
+.topControls {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    padding: 12px 20px;
+    border-radius: 24px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+/* Start Button - Minimal Style */
+.startButton {
+    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+    color: white;
+    padding: 10px 28px;
+    font-size: 15px;
+    border: none;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 600;
+    min-width: 130px;
+    box-shadow: 0 2px 8px rgba(56, 161, 105, 0.2);
+    letter-spacing: 0.3px;
+}
+
+.startButton:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(56, 161, 105, 0.3);
+}
+
+.startButton:active {
+    transform: translateY(0);
+}
+
+/* Timer Display - Clean & Minimal */
+.timerDisplay {
+    background: rgba(255, 255, 255, 0.5);
+    padding: 8px 20px;
+    border-radius: 16px;
+    border: 1.5px solid rgba(56, 161, 105, 0.15);
+}
+
+#timer {
+    font-size: 22px;
+    font-weight: 700;
+    color: #2d3748;
+    font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+    letter-spacing: 1px;
+}
+
+/* Difficulty Controls - Subtle Buttons */
+.difficultyControls {
+    display: flex;
+    gap: 8px;
+}
+
+.speedButton {
+    background: rgba(255, 255, 255, 0.6);
+    color: #4a5568;
+    border: 1.5px solid rgba(74, 85, 104, 0.15);
+    padding: 8px 18px;
+    font-size: 14px;
+    cursor: pointer;
+    border-radius: 14px;
+    transition: all 0.3s ease;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+}
+
+.speedButton:hover {
+    background: rgba(255, 255, 255, 0.85);
+    border-color: rgba(56, 161, 105, 0.3);
+    color: #38a169;
+}
+
+.activeDifficulty {
+    background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 2px 8px rgba(56, 161, 105, 0.25);
+}
+
+.activeDifficulty:hover {
+    background: linear-gradient(135deg, #2f855a 0%, #276749 100%);
+    color: white;
+}
+
+/* Score Section - Compact Pill */
+.scoreSection {
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(10px);
+    padding: 10px 28px;
+    border-radius: 20px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+    align-self: flex-start;
+    border: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+.scoreSection h2 {
+    color: #2d3748;
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: -0.2px;
+}
+
+#score {
+    color: #38a169;
+    font-weight: 700;
+    font-size: 19px;
+}
+
+/* Game Screen Container - Soft & Blended */
+.gameScreenContainer {
+    position: relative;
+    width: 100%;
+    height: 450px;
+    /*background: linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.65) 100%);
+    backdrop-filter: blur(10px);*/
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08),
+                inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+/* Target/Moving Div - Smooth Appearance */
+.movingDiv {
+    position: absolute;
+    width: 70px;
+    height: 70px;
+    right: 20px;
+    top: 0;
+    border-radius: 50%;
+    background-color: rgba(224, 224, 224, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.movingDiv:hover {
+    transform: scale(1.08);
+}
+
+/* Arrow */
+#arrow {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 60px;
+    height: 20px;
+    background-image: url("arrow.png");
+    background-size: contain;
+    background-repeat: no-repeat;
+    display: none;
+    pointer-events: none;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
+}
+
+#gameImage {
+    width: 100%;
+    height: 150%;
+    border-radius: 50%;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    pointer-events: auto;
+}
+
+.bowCursor,
+.bowCursor #gameImage {
+    cursor: url("bow.png") 100 100, crosshair;
+}
+
+.gameRunning {
+    cursor: url("bow.png") 100 100, crosshair;
+}
+
+/* Game Over Popup */
+.popup-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.popup-content {
+    position: relative;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    padding: 40px;
+    border-radius: 24px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    animation: popupSlideIn 0.3s ease-out;
+    border: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+@keyframes popupSlideIn {
+    from {
+        transform: scale(0.9) translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+    }
+}
+
+.popup-close {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: rgba(0, 0, 0, 0.05);
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    font-size: 20px;
+    cursor: pointer;
+    color: #4a5568;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.popup-close:hover {
+    background: rgba(0, 0, 0, 0.1);
+    color: #1a202c;
+}
+
+.popup-content h2 {
+    margin: 0 0 30px 0;
+    color: #2d3748;
+    font-size: 28px;
+    font-weight: 700;
+}
+
+.popup-stats {
+    margin: 20px 0;
+}
+
+.popup-stats p {
+    font-size: 17px;
+    margin: 18px 0;
+    color: #4a5568;
+    font-weight: 500;
+}
+
+.popup-stats strong {
+    color: #2d3748;
+    font-weight: 600;
+}
+
+.popup-stats span {
+    color: #38a169;
+    font-weight: 700;
+    font-size: 24px;
+}
+
+/* Responsive Design */
+@media (max-width: 600px) {
+    .gameScreenContainer {
+        height: 350px;
+    }
+
+    .topControls {
+        flex-direction: column;
+        gap: 12px;
+        padding: 16px;
+    }
+
+    .difficultyControls {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .startButton {
+        width: 100%;
+    }
+    
+    .timerDisplay {
+        order: -1;
+    }
+}

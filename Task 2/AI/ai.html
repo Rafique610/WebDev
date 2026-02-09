@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Archery Game</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <h1>🎯 Archery Game</h1>
+
+    <div id="info">
+        <span>Score: <span id="score">0</span></span>
+        <span>Time: <span id="time">30</span>s</span>
+    </div>
+
+    <div id="gameArea">
+        <div id="bow"></div>
+        <div id="arrow"></div>
+        <div id="target"></div>
+    </div>
+
+    <button id="startBtn">Start Game</button>
+    <p id="message"></p>
+
+    <script>
+        const gameArea = document.getElementById("gameArea");
+        const arrow = document.getElementById("arrow");
+        const target = document.getElementById("target");
+        const scoreDisplay = document.getElementById("score");
+        const timeDisplay = document.getElementById("time");
+        const startBtn = document.getElementById("startBtn");
+        const message = document.getElementById("message");
+
+        let score = 0;
+        let timeLeft = 30;
+        let gameOver = false;
+        let targetSpeed = 2;
+        let targetInterval;
+        let timerInterval;
+
+        const moveTarget = () => {
+            targetInterval = setInterval(() => {
+                if (gameOver) return;
+
+                let maxX = gameArea.clientWidth - target.clientWidth;
+                let maxY = gameArea.clientHeight - target.clientHeight;
+
+                let x = Math.random() * maxX;
+                let y = Math.random() * maxY;
+
+                target.style.left = x + "px";
+                target.style.top = y + "px";
+            }, 1000 / targetSpeed);
+        };
+
+        const startTimer = () => {
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timeDisplay.textContent = timeLeft;
+
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        };
+
+        const shootArrow = () => {
+            if (gameOver) return;
+
+            arrow.style.left = "60px";
+            arrow.style.transition = "none";
+
+            setTimeout(() => {
+                arrow.style.transition = "left 0.3s linear";
+                arrow.style.left = gameArea.clientWidth + "px";
+                checkCollision();
+            }, 10);
+        };
+
+        const checkCollision = () => {
+            const arrowRect = arrow.getBoundingClientRect();
+            const targetRect = target.getBoundingClientRect();
+
+            if (
+                arrowRect.right > targetRect.left &&
+                arrowRect.left < targetRect.right &&
+                arrowRect.bottom > targetRect.top &&
+                arrowRect.top < targetRect.bottom
+            ) {
+                updateScore();
+            }
+        };
+
+        const updateScore = () => {
+            score++;
+            scoreDisplay.textContent = score;
+            increaseDifficulty();
+        };
+
+        const increaseDifficulty = () => {
+            if (score % 3 === 0) {
+                targetSpeed++;
+            }
+        };
+
+        const endGame = () => {
+            gameOver = true;
+            clearInterval(targetInterval);
+            clearInterval(timerInterval);
+            message.textContent = "Game Over!";
+        };
+
+        const startGame = () => {
+            score = 0;
+            timeLeft = 30;
+            gameOver = false;
+            targetSpeed = 2;
+
+            scoreDisplay.textContent = score;
+            timeDisplay.textContent = timeLeft;
+            message.textContent = "";
+
+            moveTarget();
+            startTimer();
+        };
+
+        startBtn.addEventListener("click", startGame);
+        gameArea.addEventListener("click", shootArrow);
+    </script>
+
+</body>
+</html>
