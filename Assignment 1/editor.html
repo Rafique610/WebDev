@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo Editor</title>
+    <link rel="stylesheet" href="editor.css">
+</head>
+<body>
+
+    <!-- ===== HEADER ===== -->
+    <div class="header">
+        <div class="logo">📷 Photo Editor</div>
+        <div class="header-actions">
+            <button class="btn" id="undoBtn" onclick="undo()" disabled>↶</button>
+            <button class="btn" id="redoBtn" onclick="redo()" disabled>↷</button>
+            <button class="btn" onclick="toggleHistory()">📜</button>
+            <button class="btn" onclick="resetFilters()">Reset</button>
+            <button class="btn btn-primary" onclick="saveImage()">Save</button>
+        </div>
+    </div>
+
+    <!-- ===== CANVAS AREA ===== -->
+    <div class="canvas-area">
+        <!-- Shown before image is loaded -->
+        <div class="upload-placeholder" id="uploadPlaceholder" onclick="document.getElementById('fileInput').click()">
+            <h2 style="font-size: 48px; margin-bottom: 10px;">📷</h2>
+            <h2>Choose Image</h2>
+            <p style="margin-top: 10px; opacity: 0.6;">Click to select an image</p>
+        </div>
+
+        <!-- Shown after image is loaded -->
+        <div class="image-container" id="imageContainer">
+            <canvas id="canvas"></canvas>
+        </div>
+
+        <input type="file" id="fileInput" accept="image/*" style="display: none;" onchange="loadImage(event)">
+    </div>
+
+    <!-- ===== BOTTOM DOCK (Tools) ===== -->
+    <div class="dock">
+        <!-- Filter tools (open the slider panel) -->
+        <div class="dock-icon" data-tool="brightness" onclick="selectTool('brightness')" title="Brightness">☀️</div>
+        <div class="dock-icon" data-tool="saturation" onclick="selectTool('saturation')" title="Saturation">🎨</div>
+        <div class="dock-icon" data-tool="inversion"  onclick="selectTool('inversion')"  title="Inversion">🔄</div>
+        <div class="dock-icon" data-tool="grayscale"  onclick="selectTool('grayscale')"  title="Grayscale">⬜</div>
+
+        <div class="dock-divider"></div>
+
+        <!-- Transform tools (instant action, no slider) -->
+        <div class="dock-icon" onclick="rotateLeft()"     title="Rotate Left">↶</div>
+        <div class="dock-icon" onclick="rotateRight()"    title="Rotate Right">↷</div>
+        <div class="dock-icon" onclick="flipHorizontal()" title="Flip Horizontal">↔️</div>
+        <div class="dock-icon" onclick="flipVertical()"   title="Flip Vertical">↕️</div>
+
+        <div class="dock-divider"></div>
+
+        <!-- More filter tools -->
+        <div class="dock-icon" data-tool="rotate" onclick="selectTool('rotate')" title="Rotate">↻</div>
+        <div class="dock-icon" data-tool="sepia"  onclick="selectTool('sepia')"  title="Sepia">📜</div>
+        <div class="dock-icon" data-tool="blur"   onclick="selectTool('blur')"   title="Blur">💫</div>
+    </div>
+
+    <!-- ===== SLIDER PANEL (appears above dock when a filter is selected) ===== -->
+    <div class="slider-panel" id="sliderPanel">
+        <div class="slider-header">
+            <span class="slider-title" id="sliderTitle">Filter</span>
+            <span class="slider-value" id="sliderValue">100%</span>
+        </div>
+        <div class="segmented-slider">
+            <div class="segments-container" id="segmentsContainer"></div>
+            <input type="range" class="slider-input" id="currentSlider" min="0" max="200" value="100">
+        </div>
+    </div>
+
+    <!-- ===== HISTORY SIDEBAR ===== -->
+    <div class="history-sidebar" id="historySidebar">
+        <div class="history-header">
+            <div class="history-title">Edit History</div>
+        </div>
+        <div class="history-list" id="historyList">
+            <div class="history-empty">No changes yet</div>
+        </div>
+    </div>
+
+
+    <script>
+        // ============================================================
+        // ROLL NUMBER CONFIG
+        // Last 2 digits = 47 (ODD) → step = 3
+        // ============================================================
+        const ROLL_NUMBER = '0747';
+        const lastTwo = parseInt(ROLL_NUMBER.slice(-2));
+        const STEP = lastTwo % 2 === 0 ? 2 : 3;   // step is 3 (odd)
+
+
+        // ============================================================
+        // FILTER SETTINGS
+        // Each filter has a min, max, step, and unit label
+        // ============================================================
+        const filterConfig = {
+            brightness: { min: 0,   max: 200, step: STEP, unit: '%' },
+            saturation: { min: 0,   max: 200, step: STEP, unit: '%' },
+            inversion:  { min: 0,   max: 100, step: STEP, unit: '%' },
+            grayscale:  { min: 0,   max: 100, step: STEP, unit: '%' },
+            sepia:      { min: 0,   max: 100, step: STEP, unit: '%' },
+            blur:       { min: 0,   max: 20,  step: STEP, unit: 'px' },
+            rotate:     { min: 0,   max: 359, step: STEP, unit: '°' }
+        };
+
+
+        // ============================================================
+        // STATE
+        // All current filter values are stored here
+        // ============================================================
+        let state = {
+            brightness: 100,
+            saturation: 100,
+            inversion: 0,
+            grayscale: 0,
+            rotate: 0,
+            sepia: 0,
+            blur: 0,
+            flipH: 1,   // 1 = normal, -1 = flipped
+            flipV: 1
+        };
+
+        // History is an array of saved states so we can undo/redo
+        let history = [];
+        let historyIndex = -1;
+
+        let originalImage = null;    // The image the user uploaded (never modified)
+        let activeTool = null;       // Which filter tool is currently open
+
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+
+        // ============================================================
+        // LOAD IMAGE
+        // Called when the user picks a file
+        // ============================================================
+        function loadImage(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    originalImage = img;
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+
+                    // Reset everything for the new image
+                    resetState();
+                    saveToHistory('load', null);
+
+                    // Hide placeholder, show canvas
+                    document.getElementById('uploadPlaceholder').style.display = 'none';
+                    document.getElementById('imageContainer').style.display = 'block';
+
+                    drawCanvas();
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+
+        // ============================================================
+        // DRAW CANVAS
+        // Redraws the image with all current filter + transform values
+        // ============================================================
+        function drawCanvas() {
+            if (!originalImage) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+
+            // Apply rotation and flip (these need coordinate transforms)
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.rotate(state.rotate * Math.PI / 180);
+            ctx.scale(state.flipH, state.flipV);
+            ctx.translate(-canvas.width / 2, -canvas.height / 2);
+
+            // Apply CSS filters (brightness, blur, etc.)
+            ctx.filter = `
+                brightness(${state.brightness}%)
+                saturate(${state.saturation}%)
+                invert(${state.inversion}%)
+                grayscale(${state.grayscale}%)
+                sepia(${state.sepia}%)
+                blur(${state.blur}px)
+            `;
+
+            ctx.drawImage(originalImage, 0, 0, canvas.width, canvas.height);
+            ctx.restore();
+        }
+
+
+        // ============================================================
+        // SELECT TOOL
+        // Opens/closes the slider panel for a filter
+        // ============================================================
+        function selectTool(tool) {
+            if (!originalImage) return;
+
+            // Remove highlight from previous tool button
+            if (activeTool) {
+                document.querySelector(`[data-tool="${activeTool}"]`).classList.remove('active');
+            }
+
+            // Clicking the same tool again closes the panel
+            if (activeTool === tool) {
+                activeTool = null;
+                document.getElementById('sliderPanel').classList.remove('active');
+                return;
+            }
+
+            // Set up slider for the chosen tool
+            activeTool = tool;
+            const cfg = filterConfig[tool];
+            const slider = document.getElementById('currentSlider');
+
+            slider.min   = cfg.min;
+            slider.max   = cfg.max;
+            slider.step  = cfg.step;
+            slider.value = state[tool];
+
+            // Update the label and value display
+            document.getElementById('sliderTitle').textContent = tool[0].toUpperCase() + tool.slice(1);
+            document.getElementById('sliderValue').textContent = state[tool] + cfg.unit;
+
+            // Draw the segmented bar to match current value
+            updateSegments(state[tool], cfg.min, cfg.max);
+
+            // Highlight active tool button and show panel
+            document.querySelector(`[data-tool="${tool}"]`).classList.add('active');
+            document.getElementById('sliderPanel').classList.add('active');
+        }
+
+
+        // ============================================================
+        // SLIDER — LIVE PREVIEW (fires while dragging)
+        // ============================================================
+        document.getElementById('currentSlider').addEventListener('input', function() {
+            if (!activeTool) return;
+
+            const val = parseFloat(this.value);
+            state[activeTool] = val;
+
+            // Update display
+            document.getElementById('sliderValue').textContent = val + filterConfig[activeTool].unit;
+            updateSegments(val, filterConfig[activeTool].min, filterConfig[activeTool].max);
+            drawCanvas();
+        });
+
+
+        // ============================================================
+        // SLIDER — SAVE TO HISTORY (fires when user lets go)
+        // ============================================================
+        document.getElementById('currentSlider').addEventListener('change', function() {
+            if (!activeTool) return;
+            saveToHistory(activeTool, parseFloat(this.value));
+        });
+
+
+        // ============================================================
+        // TRANSFORM BUTTONS
+        // Rotate and flip do instant actions (no slider needed)
+        // ============================================================
+        function rotateLeft() {
+            if (!originalImage) return;
+            state.rotate = (state.rotate - 90 + 360) % 360;
+            drawCanvas();
+            saveToHistory('rotate-left', state.rotate);
+        }
+
+        function rotateRight() {
+            if (!originalImage) return;
+            state.rotate = (state.rotate + 90) % 360;
+            drawCanvas();
+            saveToHistory('rotate-right', state.rotate);
+        }
+
+        function flipHorizontal() {
+            if (!originalImage) return;
+            state.flipH *= -1;
+            drawCanvas();
+            saveToHistory('flip-horizontal', state.flipH);
+        }
+
+        function flipVertical() {
+            if (!originalImage) return;
+            state.flipV *= -1;
+            drawCanvas();
+            saveToHistory('flip-vertical', state.flipV);
+        }
+
+
+        // ============================================================
+        // RESET FILTERS
+        // Goes back to all defaults (also clears history)
+        // ============================================================
+        function resetFilters() {
+            if (!originalImage) return;
+            resetState();
+            history = [];
+            historyIndex = -1;
+            saveToHistory('reset', null);
+            drawCanvas();
+        }
+
+        // Helper: reset state values to defaults
+        function resetState() {
+            state = {
+                brightness: 100, saturation: 100,
+                inversion: 0,    grayscale: 0,
+                rotate: 0,       sepia: 0,
+                blur: 0,         flipH: 1, flipV: 1
+            };
+        }
+
+
+        // ============================================================
+        // HISTORY — SAVE
+        // Stores a snapshot of the current state into the history array
+        // ============================================================
+        function saveToHistory(action, value) {
+            // Cut off any "future" states if we went back and made a new change
+            history = history.slice(0, historyIndex + 1);
+
+            // Push a copy of current state along with what action caused it
+            history.push({ ...state, action, value });
+            historyIndex = history.length - 1;
+
+            updateHistoryUI();
+            updateUndoRedoButtons();
+        }
+
+
+        // ============================================================
+        // HISTORY — JUMP TO A POINT
+        // Restores state to what it was at that history index
+        // ============================================================
+        function goToHistory(index) {
+            if (index < 0 || index >= history.length) return;
+
+            historyIndex = index;
+            const saved = history[index];
+
+            // Restore all state values from the saved snapshot
+            state = {
+                brightness: saved.brightness, saturation: saved.saturation,
+                inversion:  saved.inversion,  grayscale:  saved.grayscale,
+                rotate:     saved.rotate,      sepia:      saved.sepia,
+                blur:       saved.blur,        flipH:      saved.flipH,
+                flipV:      saved.flipV
+            };
+
+            drawCanvas();
+            updateHistoryUI();
+            updateUndoRedoButtons();
+        }
+
+        function undo() { goToHistory(historyIndex - 1); }
+        function redo() { goToHistory(historyIndex + 1); }
+
+
+        // ============================================================
+        // HISTORY — UPDATE SIDEBAR UI
+        // Renders the list of history items in the sidebar
+        // ============================================================
+        function updateHistoryUI() {
+            const list = document.getElementById('historyList');
+
+            if (history.length === 0) {
+                list.innerHTML = '<div class="history-empty">No changes yet</div>';
+                return;
+            }
+
+            list.innerHTML = '';
+            history.forEach((entry, i) => {
+                const item = document.createElement('div');
+                item.className = 'history-item' + (i === historyIndex ? ' active' : '');
+                item.innerHTML = `
+                    <div class="history-item-name">${getActionLabel(entry.action)}</div>
+                    <div class="history-item-value">${getActionValue(entry.action, entry.value)}</div>
+                `;
+                item.onclick = () => goToHistory(i);
+                list.appendChild(item);
+            });
+        }
+
+
+        // ============================================================
+        // UNDO/REDO BUTTONS — enable or disable based on position
+        // ============================================================
+        function updateUndoRedoButtons() {
+            document.getElementById('undoBtn').disabled = historyIndex <= 0;
+            document.getElementById('redoBtn').disabled = historyIndex >= history.length - 1;
+        }
+
+
+        // ============================================================
+        // TOGGLE HISTORY SIDEBAR
+        // ============================================================
+        function toggleHistory() {
+            document.getElementById('historySidebar').classList.toggle('active');
+        }
+
+
+        // ============================================================
+        // SAVE IMAGE
+        // Downloads the canvas as a PNG file
+        // ============================================================
+        function saveImage() {
+            if (!originalImage) return;
+            const link = document.createElement('a');
+            link.download = 'edited-image.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+
+
+        // ============================================================
+        // SEGMENTED BAR
+        // Visual representation of the slider value as lit-up bars
+        // ============================================================
+        function updateSegments(value, min, max) {
+            const container = document.getElementById('segmentsContainer');
+            const TOTAL = 20;  // how many bar segments to show
+
+            // Build segments on first call
+            if (container.children.length === 0) {
+                for (let i = 0; i < TOTAL; i++) {
+                    const seg = document.createElement('div');
+                    seg.className = 'segment';
+                    container.appendChild(seg);
+                }
+            }
+
+            // Figure out how many segments should be "active" (lit up)
+            const percent = (value - min) / (max - min);
+            const activeCount = Math.floor(percent * TOTAL);
+
+            Array.from(container.children).forEach((seg, i) => {
+                if (i < activeCount) {
+                    seg.classList.add('active');
+                    seg.style.height = (60 + Math.random() * 40) + '%'; // random height for visual effect
+                } else {
+                    seg.classList.remove('active');
+                    seg.style.height = '30%';
+                }
+            });
+        }
+
+
+        // ============================================================
+        // LABEL HELPERS
+        // Convert action keys into readable text for the history list
+        // ============================================================
+        function getActionLabel(action) {
+            const labels = {
+                'load':           '📷 Image Loaded',
+                'reset':          '🔄 Reset All Filters',
+                'brightness':     '☀️ Brightness',
+                'saturation':     '🎨 Saturation',
+                'inversion':      '🔄 Inversion',
+                'grayscale':      '⬜ Grayscale',
+                'rotate':         '↻ Rotate',
+                'rotate-left':    '↶ Rotate Left',
+                'rotate-right':   '↷ Rotate Right',
+                'flip-horizontal':'↔️ Flip Horizontal',
+                'flip-vertical':  '↕️ Flip Vertical',
+                'sepia':          '📜 Sepia',
+                'blur':           '💫 Blur'
+            };
+            return labels[action] || action;
+        }
+
+        function getActionValue(action, value) {
+            if (action === 'load')           return '';
+            if (action === 'reset')          return 'All filters cleared';
+            if (action === 'flip-horizontal') return 'Flipped horizontally';
+            if (action === 'flip-vertical')   return 'Flipped vertically';
+            if (action === 'blur')            return value != null ? `${value}px` : '';
+            if (action.includes('rotate'))    return value != null ? `${value}°` : '';
+            return value != null ? `${value}%` : '';
+        }
+
+
+        // ============================================================
+        // INIT — disable undo/redo on page load
+        // ============================================================
+        updateUndoRedoButtons();
+    </script>
+</body>
+</html>
